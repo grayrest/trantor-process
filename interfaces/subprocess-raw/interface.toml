@@ -1,0 +1,8 @@
+# The raw spawn and its fd-numbered redirects. Wired but not exported: apps
+# cannot import it (D-S2-45), as with trantor-cli's FdHandoff.
+module = "SubprocessRaw"
+[[resources]]
+name = "Handle"
+[[hosted]]
+leaf = "spawn_redirected!"
+symbol_stem = "spawn_redirected"

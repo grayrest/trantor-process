@@ -1,0 +1,13 @@
+[package]
+name = "subprocess-host"
+version = "0.0.0"
+edition = "2021"
+publish = false
+[lib]
+crate-type = ["staticlib", "rlib"]
+[dependencies]
+sync-io-core = { path = "../sync-io-core" }
+trantor-abi = "0.0.0"      # generated; the consumer's workspace patches it
+# libc: the signal-mask reset in pre_exec, SIGPIPE suppression around a write
+# to a child, F_DUPFD_CLOEXEC for a borrowed redirect, kill(2), and faccessat.
+libc = "=0.2.189"

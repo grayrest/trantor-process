@@ -1,0 +1,50 @@
+# trantor-process — starting child processes, for trantor-cli apps.
+#
+# An ADD-ON over the trantor-cli baseline: no driver; its modules import the
+# baseline's `IOErr`, `OsStr`, `Env` and `Path`, and its host reaches the
+# baseline's userland cwd. A consumer names both:
+#
+#   [deps]
+#   trantor-cli = { path = "../trantor-cli" }
+#   trantor-process = { path = "../trantor-process" }
+#
+# It was in trantor-cli, which wired it by default. A child process is not
+# confined by anything, so a baseline that can spawn cannot be confined:
+# `Cmd.exec!("sh", ["-c", …])` reached anything a `[wiring] fs = "fs-confined"`
+# world meant to fence off. Out of the baseline, a world is confined by not
+# adding this dependency (trantor D-S2-19).
+#
+# Two surfaces, matching the baseline's split:
+#   - WASI-derived (roc-native): Subprocess
+#   - basic-cli shim over it: Cmd
+[package]
+name = "trantor-process"
+version = "0.1.0"
+exports = [
+	"Subprocess",
+	"Cmd",
+]
+
+[deps]
+trantor-cli = { path = "../trantor-cli" }
+
+[interfaces.subprocess]
+[interfaces.subprocess-raw]
+
+[components.subprocess-host]
+kind = "host"
+lang = "rust"
+imports = ["sync-io", "fd-handoff"]
+exports = ["subprocess", "subprocess-raw"]
+
+[components.cmd-lib]
+kind = "roc"
+exports = ["Cmd", "CmdStatus"]
+
+[provides]
+subprocess = "subprocess-host"
+subprocess-raw = "subprocess-host"
+
+# What `trantor test .` composes this package against.
+[dev-deps]
+trantor-cli = { path = "../trantor-cli" }

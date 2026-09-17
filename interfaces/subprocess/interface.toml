@@ -1,0 +1,33 @@
+# roc:subprocess (roc-native, P3; seahaven's design). Program/args/envs cross
+# as OsStr (P11). A child is a resource (P5); its pipes are sync-io streams.
+module = "Subprocess"
+[[hosted]]
+leaf = "handle_pid!"
+symbol_stem = "handle_pid"
+[[hosted]]
+leaf = "handle_stdin!"
+symbol_stem = "handle_stdin"
+[[hosted]]
+leaf = "handle_stdout!"
+symbol_stem = "handle_stdout"
+[[hosted]]
+leaf = "handle_stderr!"
+symbol_stem = "handle_stderr"
+[[hosted]]
+leaf = "handle_close_stdin!"
+symbol_stem = "handle_close_stdin"
+[[hosted]]
+leaf = "handle_wait!"
+symbol_stem = "handle_wait"
+[[hosted]]
+leaf = "handle_try_wait!"
+symbol_stem = "handle_try_wait"
+[[hosted]]
+leaf = "handle_signal!"
+symbol_stem = "handle_signal"
+[[hosted]]
+leaf = "can_execute!"
+symbol_stem = "can_execute"
+[[hosted]]
+leaf = "handle_collect!"
+symbol_stem = "handle_collect"
