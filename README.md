@@ -46,19 +46,19 @@ Child :: { handle : Handle, pid : I32 }
 Handle :: Box(U64)                       # a host resource
 
 # starting
-Subprocess.spawn! : Cmd, { stdin ?: Stdio, stdout ?: Stdio, stderr ?: Stdio } => Try(Child, [Io(IOErr), ..])
+Subprocess.spawn! : Cmd, { stdin ?: Stdio, stdout ?: Stdio, stderr ?: Stdio } => Try(Child, [Io(IOErr)])
 Subprocess.can_execute! : OsStr => Try({}, [Io(IOErr)])   # access(X_OK) against the userland cwd, following links
 
 # Child methods
 pid : Child -> I32
-stdin! : Child => Try(Streams.OutputStream, [NotPiped, ..])
-stdout! : Child => Try(Streams.InputStream, [NotPiped, ..])
-stderr! : Child => Try(Streams.InputStream, [NotPiped, ..])
+stdin! : Child => Try(Streams.OutputStream, [NotPiped])
+stdout! : Child => Try(Streams.InputStream, [NotPiped])
+stderr! : Child => Try(Streams.InputStream, [NotPiped])
 close_stdin! : Child => {}
-wait! : Child => Try(ExitStatus, [Io(IOErr), ..])           # closes stdin first
-try_wait! : Child => Try([Running, Done(ExitStatus)], [Io(IOErr), ..])   # leaves stdin open
-signal! : Child, Signal => Try({}, [Io(IOErr), ..])
-collect! : Child, List(U8) => Try({ status : ExitStatus, stdout : List(U8), stderr : List(U8) }, [Io(IOErr), NotPiped, ..])
+wait! : Child => Try(ExitStatus, [Io(IOErr)])           # closes stdin first
+try_wait! : Child => Try([Running, Done(ExitStatus)], [Io(IOErr)])   # leaves stdin open
+signal! : Child, Signal => Try({}, [Io(IOErr)])
+collect! : Child, List(U8) => Try({ status : ExitStatus, stdout : List(U8), stderr : List(U8) }, [Io(IOErr), NotPiped])
 ```
 
 Pipes are OS pipes of about 64 KB. Reading one output to its end while the
@@ -89,10 +89,10 @@ envs : Cmd, List((OsStr, OsStr)) -> Cmd
 clear_envs : Cmd -> Cmd                  # PATH goes too: name the program by path, or add PATH back
 
 # running, streams inherited
-Cmd.exec! : OsStr, List(OsStr) => Try({}, [ExecFailed({ command : Str, exit_code : I32 }), FailedToGetExitCode({ command : Str, err : IOErr }), ..])
-exec_cmd! : Cmd => Try({}, [ExecCmdFailed({ command : Str, exit_code : I32 }), FailedToGetExitCode({ command : Str, err : IOErr }), ..])
-exec_exit_code! : Cmd => Try(I32, [FailedToGetExitCode({ command : Str, err : IOErr }), ..])
-exec_status! : Cmd => Try(I32, [FailedToGetExitCode({ command : Str, err : IOErr }), ..])   # a signal death is the negated signal
+Cmd.exec! : OsStr, List(OsStr) => Try({}, [ExecFailed({ command : Str, exit_code : I32 }), FailedToGetExitCode({ command : Str, err : IOErr })])
+exec_cmd! : Cmd => Try({}, [ExecCmdFailed({ command : Str, exit_code : I32 }), FailedToGetExitCode({ command : Str, err : IOErr })])
+exec_exit_code! : Cmd => Try(I32, [FailedToGetExitCode({ command : Str, err : IOErr })])
+exec_status! : Cmd => Try(I32, [FailedToGetExitCode({ command : Str, err : IOErr })])   # a signal death is the negated signal
 
 # running, output captured
 exec_output! : Cmd => Try({ stdout_utf8 : Str, stderr_utf8_lossy : Str }, [
@@ -105,10 +105,10 @@ exec_output_inherit_stdin! : Cmd => Try({ stdout_utf8 : Str, stderr_utf8_lossy :
     NonZeroExitCode({ command : Str, exit_code : I32, stdout_utf8_lossy : Str, stderr_utf8_lossy : Str }),
     FailedToGetExitCode({ command : Str, err : IOErr }),
     ..])
-exec_output_bytes! : Cmd => Try({ stderr_bytes : List(U8), stdout_bytes : List(U8) }, [NonZeroExitCodeB({ exit_code : I32, stdout_bytes : List(U8), stderr_bytes : List(U8) }), FailedToGetExitCodeB(IOErr), ..])
+exec_output_bytes! : Cmd => Try({ stderr_bytes : List(U8), stdout_bytes : List(U8) }, [NonZeroExitCodeB({ exit_code : I32, stdout_bytes : List(U8), stderr_bytes : List(U8) }), FailedToGetExitCodeB(IOErr)])
 
 # starting
-spawn! : Cmd, { stdin ?: Subprocess.Stdio, stdout ?: Subprocess.Stdio, stderr ?: Subprocess.Stdio } => Try(Subprocess.Child, [SpawnFailed({ command : Str, err : IOErr }), ..])
+spawn! : Cmd, { stdin ?: Subprocess.Stdio, stdout ?: Subprocess.Stdio, stderr ?: Subprocess.Stdio } => Try(Subprocess.Child, [SpawnFailed({ command : Str, err : IOErr })])
 Cmd.check_available! : Str => Bool       # searches this process's PATH, as a spawn would
 
 # rendering

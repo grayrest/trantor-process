@@ -54,7 +54,7 @@ Subprocess :: [].{
 		pid = |child| child.pid
 		## The pipe to the child's stdin; `NotPiped` unless spawned with `Pipe`.
 		## Every call returns the same stream.
-		stdin! : Child => Try(Streams.OutputStream, [NotPiped, ..])
+		stdin! : Child => Try(Streams.OutputStream, [NotPiped])
 		stdin! = |child| match Subprocess.handle_stdin!(child.handle) {
 			Ok(s) => Ok(s)
 			Err(NotPiped) => Err(NotPiped)
@@ -65,9 +65,9 @@ Subprocess :: [].{
 		## Reading stdout to its end while the child blocks writing a full
 		## stderr pipe (about 64 KB) deadlocks both. Read both on the same
 		## schedule, or use `collect!`.
-		stdout! : Child => Try(Streams.InputStream, [NotPiped, ..])
+		stdout! : Child => Try(Streams.InputStream, [NotPiped])
 		stdout! = |child| input(Subprocess.handle_stdout!(child.handle))
-		stderr! : Child => Try(Streams.InputStream, [NotPiped, ..])
+		stderr! : Child => Try(Streams.InputStream, [NotPiped])
 		stderr! = |child| input(Subprocess.handle_stderr!(child.handle))
 		## Close the pipe to stdin, so a child reading it sees end of input.
 		close_stdin! : Child => {}
@@ -75,17 +75,17 @@ Subprocess :: [].{
 		## Close stdin, then wait for the child to end. A child writing more
 		## than a pipe holds to a piped stdout or stderr nobody reads never
 		## ends, so this never returns: read them, or use `collect!`.
-		wait! : Child => Try(ExitStatus, [Io(IOErr), ..])
+		wait! : Child => Try(ExitStatus, [Io(IOErr)])
 		wait! = |child| io(Subprocess.handle_wait!(child.handle))
 		## Whether the child has ended, without waiting. Unlike `wait!` this does
 		## not close stdin, so a child reading its stdin pipe to the end stays
 		## `Running` for good: `close_stdin!` first, or poll until you are ready
 		## to `wait!`.
-		try_wait! : Child => Try([Running, Done(ExitStatus)], [Io(IOErr), ..])
+		try_wait! : Child => Try([Running, Done(ExitStatus)], [Io(IOErr)])
 		try_wait! = |child| io(Subprocess.handle_try_wait!(child.handle))
 		## An already-reaped child is not signalled (its pid may belong to
 		## another process by now): `Io(Other("No such process…"))`.
-		signal! : Child, Signal => Try({}, [Io(IOErr), ..])
+		signal! : Child, Signal => Try({}, [Io(IOErr)])
 		signal! = |child, sig| io(Subprocess.handle_signal!(child.handle, sig))
 		## Write `input` to stdin and close it, read stdout and stderr to their
 		## ends on separate threads, then wait. A grandchild still holding an
@@ -94,7 +94,7 @@ Subprocess :: [].{
 		## sent SIGKILL and is not reaped either way: `wait!` it. Input with stdin not piped, or
 		## already closed, is `NotPiped`; an output not piped, or already read from, comes back
 		## with what was left in it.
-		collect! : Child, List(U8) => Try({ status : ExitStatus, stdout : List(U8), stderr : List(U8) }, [Io(IOErr), NotPiped, ..])
+		collect! : Child, List(U8) => Try({ status : ExitStatus, stdout : List(U8), stderr : List(U8) }, [Io(IOErr), NotPiped])
 		collect! = |child, bytes| match Subprocess.handle_collect!(child.handle, bytes) {
 			Ok(done) => Ok(done)
 			Err(Io(e)) => Err(Io(e))
@@ -104,7 +104,7 @@ Subprocess :: [].{
 
 	## Start `cmd` with each standard stream as given; all default to `Inherit`.
 	## The child starts in the userland cwd with no signals blocked.
-	spawn! : Cmd, { stdin ?: Stdio, stdout ?: Stdio, stderr ?: Stdio } => Try(Child, [Io(IOErr), ..])
+	spawn! : Cmd, { stdin ?: Stdio, stdout ?: Stdio, stderr ?: Stdio } => Try(Child, [Io(IOErr)])
 	spawn! = |cmd, opts| {
 		stdin = redirect!(opts.?stdin ?? Inherit)
 		stdout = redirect!(opts.?stdout ?? Inherit)
@@ -164,13 +164,13 @@ first_failure = |redirects| match redirects {
 
 ## The raw leaves answer closed unions, which `?` cannot widen into a caller's
 ## open one; the `Child` methods reopen them.
-io : Try(a, [Io(IOErr)]) -> Try(a, [Io(IOErr), ..])
+io : Try(a, [Io(IOErr)]) -> Try(a, [Io(IOErr)])
 io = |r| match r {
 	Ok(v) => Ok(v)
 	Err(Io(e)) => Err(Io(e))
 }
 
-input : Try(Streams.InputStream, [NotPiped]) -> Try(Streams.InputStream, [NotPiped, ..])
+input : Try(Streams.InputStream, [NotPiped]) -> Try(Streams.InputStream, [NotPiped])
 input = |r| match r {
 	Ok(s) => Ok(s)
 	Err(NotPiped) => Err(NotPiped)
