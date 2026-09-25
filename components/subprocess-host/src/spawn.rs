@@ -174,13 +174,14 @@ fn with<R>(h: *mut u64, f: impl FnOnce(&mut Spawned) -> R) -> R {
 }
 
 #[unsafe(no_mangle)]
-pub extern "C-unwind" fn trantor__subprocess_host__spawn_redirected(cmd: crate::CmdRecord, r: Redirects) -> SubprocessRawSpawnRedirectedResult {
+pub extern "C-unwind" fn trantor__subprocess_host__spawn_redirected(cmd: crate::CmdRecord, r: Redirects, cwd: RocStr) -> SubprocessRawSpawnRedirectedResult {
+    let cwd = crate::userland_cwd(cwd);
     let streams = stdio(r.stdin).and_then(|i| Ok((i, stdio(r.stdout)?, stdio(r.stderr)?)));
     // Built even when a copy failed, so the owned record is released.
-    let mut c = crate::command(cmd);
+    let mut c = crate::command(cmd, &cwd);
     let started = streams.and_then(|(stdin, stdout, stderr)| {
         c.stdin(stdin).stdout(stdout).stderr(stderr);
-        c.spawn().map_err(crate::explain_missing_cwd)
+        c.spawn().map_err(|e| crate::explain_missing_cwd(e, &cwd))
     });
     match started {
         Ok(mut child) => {
@@ -378,16 +379,17 @@ fn kill_unreaped(pid: Option<libc::pid_t>) {
     }
 }
 
-/// `Subprocess.can_execute!`: `faccessat(X_OK, AT_EACCESS)`, a relative path
+/// `SubprocessRaw.can_execute!`: `faccessat(X_OK, AT_EACCESS)`, a relative path
 /// against the userland cwd as a spawn resolves it.
 #[unsafe(no_mangle)]
-pub extern "C-unwind" fn trantor__subprocess_host__can_execute(path: crate::Native) -> SubprocessCanExecuteResult {
+pub extern "C-unwind" fn trantor__subprocess_host__can_execute(path: crate::Native, cwd: RocStr) -> SubprocessRawCanExecuteResult {
+    let cwd = crate::userland_cwd(cwd);
     let native = crate::to_os(&path);
     // SAFETY: owned argument (B0).
     unsafe { path.decref(abi::host()) };
-    match crate::executable_by_user(native.as_bytes()) {
-        Ok(()) => SubprocessCanExecuteResult { payload: SubprocessCanExecuteResultPayload { ok: [] }, tag: SubprocessCanExecuteResultTag::Ok },
-        Err(e) => SubprocessCanExecuteResult { payload: SubprocessCanExecuteResultPayload { err: ManuallyDrop::new(crate::ioerr(&e)) }, tag: SubprocessCanExecuteResultTag::Err },
+    match crate::executable_by_user(native.as_bytes(), &cwd) {
+        Ok(()) => SubprocessRawCanExecuteResult { payload: SubprocessRawCanExecuteResultPayload { ok: [] }, tag: SubprocessRawCanExecuteResultTag::Ok },
+        Err(e) => SubprocessRawCanExecuteResult { payload: SubprocessRawCanExecuteResultPayload { err: ManuallyDrop::new(crate::ioerr(&e)) }, tag: SubprocessRawCanExecuteResultTag::Err },
     }
 }
 

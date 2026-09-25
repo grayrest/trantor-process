@@ -26,8 +26,5 @@ symbol_stem = "handle_try_wait"
 leaf = "handle_signal!"
 symbol_stem = "handle_signal"
 [[hosted]]
-leaf = "can_execute!"
-symbol_stem = "can_execute"
-[[hosted]]
 leaf = "handle_collect!"
 symbol_stem = "handle_collect"

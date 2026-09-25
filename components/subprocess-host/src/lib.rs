@@ -21,12 +21,6 @@ mod spawn;
 /// otherwise win the name.
 pub(crate) type Native = abi::OsStr;
 
-// The userland cwd lives in the `cwd-host` component (FsOps.set_cwd! writes it);
-// read it to run subprocesses in that directory (Option A cwd model).
-unsafe extern "C-unwind" {
-    fn trantor__cwd_host__get() -> RocStr;
-}
-
 pub(crate) fn to_os(n: &Native) -> OsString {
     unsafe {
         match n.tag {
@@ -40,8 +34,10 @@ pub(crate) fn to_os(n: &Native) -> OsString {
 /// `Subprocess.Cmd`; its glue name is a hash of the record shape.
 pub(crate) type CmdRecord = AnonStructA666ca78571ad967;
 
-/// Build the Command and release the owned record (B0 rule).
-pub(crate) fn command(a: CmdRecord) -> Command {
+/// Build the Command and release the owned record (B0 rule). `cwd` is the
+/// userland working directory, handed down from Roc; empty is "inherit this
+/// process's".
+pub(crate) fn command(a: CmdRecord, cwd: &str) -> Command {
     let mut c = Command::new(to_os(&a.program));
     c.args(a.args.as_slice().iter().map(to_os));
     if a.clear_envs { c.env_clear(); }
@@ -50,17 +46,21 @@ pub(crate) fn command(a: CmdRecord) -> Command {
     unsafe { a.decref(abi::host()); } // whole-struct decref recurses into args/envs elements (B0)
     // Honor the userland cwd so a child runs where file ops resolve (basic-cli's
     // observable single-cwd behavior), without mutating this process's real cwd.
-    // Empty = no set_cwd! yet = inherit the process cwd.
-    let cwd = userland_cwd();
     if !cwd.is_empty() { c.current_dir(cwd); }
     // SAFETY: the hook makes only async-signal-safe calls between fork and exec.
     unsafe { c.pre_exec(clear_signal_mask); }
     c
 }
 
-/// The userland cwd; empty until `Env.set_cwd!`.
-fn userland_cwd() -> String {
-    let cwd = unsafe { trantor__cwd_host__get() };
+/// The userland cwd an owned `Str` argument carries, released as it is read
+/// (B0). Empty until `Env.set_cwd!`.
+///
+/// An argument rather than something this host fetches: `cwd` is a wired
+/// interface and only Roc sees the wiring. What this replaced was an extern on
+/// `trantor__cwd_host__get`, naming trantor-cli's default component (D-S2-19,
+/// when process creation left the baseline); a world wiring `cwd` to its own
+/// component still linked and then read a slot nobody wrote.
+pub(crate) fn userland_cwd(cwd: RocStr) -> String {
     let owned = cwd.as_str().to_string();
     unsafe { cwd.decref(abi::host()); }
     owned
@@ -68,10 +68,9 @@ fn userland_cwd() -> String {
 
 /// Whether this user may execute `path`, as `exec` would decide, following
 /// links. A relative path is resolved against the userland cwd.
-pub(crate) fn executable_by_user(path: &[u8]) -> std::io::Result<()> {
+pub(crate) fn executable_by_user(path: &[u8], cwd: &str) -> std::io::Result<()> {
     let relative = std::path::Path::new(OsStr::from_bytes(path));
-    let cwd = userland_cwd();
-    let full = if relative.is_absolute() || cwd.is_empty() { relative.to_path_buf() } else { std::path::Path::new(&cwd).join(relative) };
+    let full = if relative.is_absolute() || cwd.is_empty() { relative.to_path_buf() } else { std::path::Path::new(cwd).join(relative) };
     let c_path = std::ffi::CString::new(full.as_os_str().as_bytes()).map_err(|_| std::io::Error::new(std::io::ErrorKind::InvalidInput, "a path holding a NUL byte"))?;
     // SAFETY: a NUL-terminated path; AT_EACCESS checks with the effective ids.
     if unsafe { libc::faccessat(libc::AT_FDCWD, c_path.as_ptr(), libc::X_OK, libc::AT_EACCESS) } != 0 {
@@ -90,9 +89,8 @@ pub(crate) fn executable_by_user(path: &[u8]) -> std::io::Result<()> {
 /// chdir with `NotFound`, which reads exactly like a missing program. Named
 /// here instead, so a caller matching `NotFound` does not decide the tool is
 /// not installed.
-pub(crate) fn explain_missing_cwd(e: std::io::Error) -> std::io::Error {
-    let cwd = userland_cwd();
-    if e.kind() == std::io::ErrorKind::NotFound && !cwd.is_empty() && !std::path::Path::new(&cwd).is_dir() {
+pub(crate) fn explain_missing_cwd(e: std::io::Error, cwd: &str) -> std::io::Error {
+    if e.kind() == std::io::ErrorKind::NotFound && !cwd.is_empty() && !std::path::Path::new(cwd).is_dir() {
         std::io::Error::other(format!("the working directory {cwd} no longer exists"))
     } else {
         e

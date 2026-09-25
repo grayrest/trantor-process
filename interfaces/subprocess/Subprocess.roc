@@ -1,5 +1,6 @@
 import IOErr exposing [IOErr]
 import OsStr exposing [OsStr]
+import Cwd
 import Fs
 import Streams
 import FdHandoff
@@ -44,6 +45,7 @@ Subprocess :: [].{
 	## ids. An execute bit for another user, or a file on a `noexec` mount, is
 	## `PermissionDenied`. Not confined, as a spawn is not.
 	can_execute! : OsStr => Try({}, [Io(IOErr)])
+	can_execute! = |path| SubprocessRaw.can_execute!(path, Cwd.get!({}))
 	handle_collect! : Handle, List(U8) => Try({ status : ExitStatus, stdout : List(U8), stderr : List(U8) }, [Io(IOErr), NotPiped])
 
 	## A started child process.
@@ -109,7 +111,10 @@ Subprocess :: [].{
 		stderr = redirect!(opts.?stderr ?? Inherit)
 		match (stdin, stdout, stderr) {
 			(Ok(i), Ok(o), Ok(e)) => {
-				spawned = SubprocessRaw.spawn_redirected!(cmd, { stdin: i, stdout: o, stderr: e })
+				# Read here, not in the host: the wiring for `cwd` is only
+				# visible from Roc. Per call, because `Env.set_cwd!` can have
+				# moved it since the last spawn.
+				spawned = SubprocessRaw.spawn_redirected!(cmd, { stdin: i, stdout: o, stderr: e }, Cwd.get!({}))
 				# The host duplicated them for the child; these are still ours.
 				release!(stdin)
 				release!(stdout)

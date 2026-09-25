@@ -6,3 +6,6 @@ name = "Handle"
 [[hosted]]
 leaf = "spawn_redirected!"
 symbol_stem = "spawn_redirected"
+[[hosted]]
+leaf = "can_execute!"
+symbol_stem = "can_execute"

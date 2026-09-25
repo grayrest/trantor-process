@@ -20,5 +20,14 @@ SubprocessRaw :: [].{
 	## kills nor reaps the child.
 	Handle :: Box(U64)
 
-	spawn_redirected! : Cmd, { stdin : Redirect, stdout : Redirect, stderr : Redirect } => Try(Handle, [Io(IOErr)])
+	## `cwd` is the userland working directory the child starts in, empty to
+	## inherit this process's. It is an argument rather than something the host
+	## reads for itself: the `cwd` interface is wired, and only Roc sees the
+	## wiring. A host reaching `cwd-host`'s symbol by name (the extern this
+	## replaced, left behind by D-S2-19) read a slot nobody wrote in a world
+	## that put `cwd` on its own component.
+	spawn_redirected! : Cmd, { stdin : Redirect, stdout : Redirect, stderr : Redirect }, Str => Try(Handle, [Io(IOErr)])
+	## `Subprocess.can_execute!`, with the same explicit `cwd`: a relative
+	## `path` is resolved against it, as a spawn resolves the program.
+	can_execute! : OsStr, Str => Try({}, [Io(IOErr)])
 }

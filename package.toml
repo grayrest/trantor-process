@@ -1,8 +1,8 @@
 # trantor-process — starting child processes, for trantor-cli apps.
 #
 # An ADD-ON over the trantor-cli baseline: no driver; its modules import the
-# baseline's `IOErr`, `OsStr`, `Env` and `Path`, and its host reaches the
-# baseline's userland cwd. A consumer names both:
+# baseline's `IOErr`, `OsStr`, `Env`, `Path` and `Cwd`, and the userland cwd
+# reaches the host as an argument the Roc layer reads. A consumer names both:
 #
 #   [deps]
 #   trantor-cli = { path = "../trantor-cli" }
@@ -31,6 +31,9 @@ trantor-cli = { path = "../trantor-cli" }
 [interfaces.subprocess]
 [interfaces.subprocess-raw]
 
+# `cwd` is deliberately absent from `imports`: the host takes the userland cwd
+# as an argument instead of reaching a cwd component, so it has no dependency
+# on whichever one a world wires.
 [components.subprocess-host]
 kind = "host"
 lang = "rust"
