@@ -1,4 +1,4 @@
-import IOErr exposing [IOErr]
+import IOErr
 import Subprocess
 ## How `Cmd`'s run-to-completion functions report a child's `ExitStatus`. They
 ## predate the union and keep their numbers (D-S2-13): these are the three

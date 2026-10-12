@@ -48,7 +48,7 @@ polled=$(cd "$S" && capped 60 "$(bin spawn)" poll poll) || { echo "FAIL: the pol
 cat > "$TMP/myapp/app/main.roc" <<'RAW'
 app [main!] { pf: platform "../target/trantor/myapp/platform/main.roc" }
 
-import pf.OsStr exposing [OsStr]
+import pf.OsStr
 import pf.SubprocessRaw
 
 main! : List(OsStr) => Try({}, _)

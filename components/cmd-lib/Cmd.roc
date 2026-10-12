@@ -1,9 +1,9 @@
-import IOErr exposing [IOErr]
+import IOErr
 import Subprocess
 import CmdStatus
-import OsStr exposing [OsStr]
+import OsStr
 import Env
-import Path exposing [Path]
+import Path
 
 ## Build and run child processes with native-safe programs, arguments, and
 ## environment values.

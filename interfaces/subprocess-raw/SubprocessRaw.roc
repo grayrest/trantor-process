@@ -1,5 +1,5 @@
-import IOErr exposing [IOErr]
-import OsStr exposing [OsStr]
+import IOErr
+import OsStr
 ## The raw spawn, and the fd numbers a redirect carries.
 ##
 ## Not an app export: `Fd(n)` is ambient authority in a form Roc cannot type
