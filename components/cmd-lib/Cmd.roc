@@ -427,10 +427,10 @@ default_search_path = "/usr/bin:/bin"
 
 to_host_cmd : Cmd -> Subprocess.Cmd
 to_host_cmd = |cmd| {
-	args: cmd.args.map(OsStr.to_raw),
+	args: cmd.args,
 	clear_envs: cmd.clear_envs,
-	envs: flatten_arg_pairs(cmd.envs, [], 0).map(OsStr.to_raw),
-	program: OsStr.to_raw(cmd.program),
+	envs: flatten_arg_pairs(cmd.envs, [], 0),
+	program: cmd.program,
 }
 
 ## A command name is a path, rather than a bare name, when it carries a separator.
